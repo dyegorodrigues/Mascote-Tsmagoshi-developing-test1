@@ -39,7 +39,7 @@ export function useCreature(seed = 1) {
         /* estado corrompido: recomeça limpo em vez de quebrar */
       }
     }
-    return estadoInicial(getCreature("magosha"), agora);
+    return estadoInicial(getCreature("proto-eletrico-1"), agora);
   });
 
   const [saudacao, setSaudacao] = useState<string | null>(null);
@@ -107,17 +107,25 @@ export function CreatureCanvas({
   width = 360,
   height = 300,
   onPick,
+  animOverride,
+  onAnimacoes,
 }: {
   state: CreatureState;
   def: CreatureDefinition;
   width?: number;
   height?: number;
   onPick?: (x: number, y: number) => void;
+  /** Força uma animação, ignorando a simulação. Usado pela galeria. */
+  animOverride?: string;
+  /** Avisa quais animações o personagem realmente tem, quando carregam. */
+  onAnimacoes?: (nomes: string[]) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const providerRef = useRef<SpriteProvider | null>(null);
   const stateRef = useRef(state);
   stateRef.current = state;
+  const animRef = useRef(animOverride);
+  animRef.current = animOverride;
 
   useEffect(() => {
     let vivo = true;
@@ -126,12 +134,18 @@ export function CreatureCanvas({
     // Falha ao carregar arte NUNCA pode virar erro na tela: o desenho
     // procedural assume e a criança nem percebe. É o que permite cadastrar um
     // personagem antes de a arte dele existir.
+    onAnimacoes?.([]);
     if (p)
       void p
         .load()
-        .then(() => { if (vivo) providerRef.current = p; })
+        .then(() => {
+          if (!vivo) return;
+          providerRef.current = p;
+          onAnimacoes?.(p.animacoesDisponiveis());
+        })
         .catch(() => { providerRef.current = null; });
     return () => { vivo = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [def.id, def.sprite]);
 
   useEffect(() => {
@@ -157,7 +171,8 @@ export function CreatureCanvas({
       const y = (s.position.y / 100) * height;
       const escala = 2.2;
 
-      const frame = providerRef.current?.frame(s.animation, s.direction, t);
+      const anim = (animRef.current ?? s.animation) as typeof s.animation;
+      const frame = providerRef.current?.frame(anim, s.direction, t);
       if (frame) {
         const dw = frame.sw * escala;
         const dh = frame.sh * escala;
@@ -174,7 +189,7 @@ export function CreatureCanvas({
           dw, dh,
         );
       } else {
-        desenharProcedural(ctx, def.fallback, x, y, escala * 0.85, s.animation, t);
+        desenharProcedural(ctx, def.fallback, x, y, escala * 0.85, anim, t);
       }
 
       raf = requestAnimationFrame(desenhar);

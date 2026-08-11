@@ -30,7 +30,9 @@ const CARINHA: Record<string, string> = {
 
 export function App() {
   const c = useCreature();
-  const [aba, setAba] = useState<"vida" | "programar">("vida");
+  const [aba, setAba] = useState<"vida" | "programar" | "movimentos">("vida");
+  const [animacoes, setAnimacoes] = useState<string[]>([]);
+  const [animSel, setAnimSel] = useState<string | undefined>(undefined);
 
   return (
     <div style={S.page}>
@@ -53,24 +55,34 @@ export function App() {
 
         {c.saudacao && <div style={S.saudacao}>{c.saudacao}</div>}
 
-        <CreatureCanvas state={c.state} def={c.def} onPick={c.irPara} />
+        <CreatureCanvas
+          state={c.state}
+          def={c.def}
+          onPick={aba === "movimentos" ? undefined : c.irPara}
+          animOverride={aba === "movimentos" ? animSel : undefined}
+          onAnimacoes={setAnimacoes}
+        />
         <p style={S.dica}>Toque no cenário para chamar {c.state.nickname}.</p>
 
         <Barras needs={c.state.needs} />
 
         <nav style={S.tabs}>
-          {(["vida", "programar"] as const).map((t) => (
+          {(["vida", "programar", "movimentos"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setAba(t)}
               style={{ ...S.tab, ...(aba === t ? S.tabOn : {}) }}
             >
-              {t === "vida" ? "Cuidar" : "Programar"}
+              {t === "vida" ? "Cuidar" : t === "programar" ? "Programar" : "Movimentos"}
             </button>
           ))}
         </nav>
 
-        {aba === "vida" ? <AbaVida c={c} /> : <AbaProgramar />}
+        {aba === "vida" && <AbaVida c={c} />}
+        {aba === "programar" && <AbaProgramar />}
+        {aba === "movimentos" && (
+          <AbaMovimentos animacoes={animacoes} sel={animSel} onSel={setAnimSel} />
+        )}
 
         <details style={S.det}>
           <summary style={S.sum}>Trocar personagem ({CATALOGO.length})</summary>
@@ -216,6 +228,53 @@ function AbaProgramar() {
         <button style={S.btn} onClick={() => { setProg([]); setSaida([]); }}>Limpar</button>
       </div>
       {saida.length > 0 && <pre style={S.saida}>{saida.join("\n")}</pre>}
+    </div>
+  );
+}
+
+/**
+ * Galeria de movimentos.
+ *
+ * Existe para responder a pergunta "quais animacoes eu tenho?" com a lista real
+ * do personagem carregado, e nao com uma lista teorica. Saber o que ja se tem e'
+ * o primeiro passo para saber o que falta encomendar.
+ */
+function AbaMovimentos({
+  animacoes, sel, onSel,
+}: { animacoes: string[]; sel?: string; onSel: (a?: string) => void }) {
+  if (animacoes.length === 0)
+    return (
+      <p style={S.ponteTxt}>
+        Este personagem ainda nao tem folhas de animacao — esta sendo desenhado por
+        codigo. Escolha um dos personagens com arte para ver o repertorio.
+      </p>
+    );
+  return (
+    <div>
+      <p style={S.ponteTxt}>
+        <strong>{animacoes.length} animacoes</strong> prontas neste personagem. Toque
+        para ver cada uma.
+      </p>
+      <div style={S.grid}>
+        <button
+          onClick={() => onSel(undefined)}
+          style={{ ...S.chip, borderColor: !sel ? "#0E7C86" : "#D5DDE7",
+                   background: !sel ? "#D3EAEC" : "#fff" }}
+        >
+          automatico
+        </button>
+        {animacoes.map((a) => (
+          <button
+            key={a}
+            onClick={() => onSel(a)}
+            style={{ ...S.chip, borderColor: sel === a ? "#0E7C86" : "#D5DDE7",
+                     background: sel === a ? "#D3EAEC" : "#fff",
+                     fontFamily: "ui-monospace, monospace", fontSize: 11 }}
+          >
+            {a}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

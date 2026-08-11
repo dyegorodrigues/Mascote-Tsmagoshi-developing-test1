@@ -25,6 +25,14 @@ export interface SpriteProvider {
   load(): Promise<void>;
   /** Devolve o quadro atual, ou `null` se ainda não carregou. */
   frame(anim: AnimationName, dir: Direction8, timeMs: number): Frame | null;
+  /**
+   * Quais animações este personagem realmente tem.
+   *
+   * Existe para o laboratório poder mostrar o repertório de verdade em vez de
+   * uma lista teórica. Saber o que já se tem é o primeiro passo para saber o
+   * que falta encomendar.
+   */
+  animacoesDisponiveis(): string[];
 }
 
 const carregarImagem = (src: string): Promise<HTMLImageElement> =>
@@ -101,6 +109,11 @@ export class AtlasProvider implements SpriteProvider {
     };
   }
 
+  animacoesDisponiveis(): string[] {
+    if (!this.data) return [];
+    return [...new Set(Object.keys(this.data.frames).map((k) => k.replace(/_\d+$/, "")))].sort();
+  }
+
   /** Mapeia animação+direção para o nome usado no atlas, com degradação. */
   private resolverNome(anim: AnimationName, dir: Direction8): string {
     const olhandoEsquerda = dir.includes("left");
@@ -122,6 +135,38 @@ interface PmdAnim {
   frameW: number;
   frameH: number;
   durations: number[];
+  /** Linha dos pes, medida nos pixels. Ver `medirLinhaDosPes`. */
+  pivotY: number;
+}
+
+/**
+ * Descobre onde ficam os pes do personagem lendo o canal alfa.
+ *
+ * O formato PMD nao declara o pivo, e o personagem nao encosta na base do
+ * quadro — sobra transparencia embaixo, em quantidade diferente para cada
+ * criatura. Chutar uma proporcao fixa faz uns flutuarem e outros afundarem no
+ * chao, que e' o erro mais visivel que existe numa cena.
+ *
+ * Medir o ultimo pixel opaco resolve para qualquer sprite, inclusive os que
+ * ainda nem existem. Custa uma leitura no carregamento e nunca mais erra.
+ */
+function medirLinhaDosPes(img: HTMLImageElement, frameW: number, frameH: number): number {
+  try {
+    const c = document.createElement("canvas");
+    c.width = frameW;
+    c.height = frameH;
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return frameH * 0.8;
+    ctx.drawImage(img, 0, 0, frameW, frameH, 0, 0, frameW, frameH);
+    const { data } = ctx.getImageData(0, 0, frameW, frameH);
+    for (let y = frameH - 1; y >= 0; y--)
+      for (let x = 0; x < frameW; x++)
+        if (data[(y * frameW + x) * 4 + 3] > 16) return y + 1;
+    return frameH * 0.8;
+  } catch {
+    // Canvas indisponivel (jsdom, por exemplo): a estimativa serve.
+    return frameH * 0.8;
+  }
 }
 
 /**
@@ -195,10 +240,14 @@ export class PmdProvider implements SpriteProvider {
       );
 
       try {
+        const image = await carregarImagem(`${base}/${alvo.querySelector("Name")?.textContent}-Anim.png`);
+        const fw = parseInt(alvo.querySelector("FrameWidth")?.textContent || "40", 10);
+        const fh = parseInt(alvo.querySelector("FrameHeight")?.textContent || "40", 10);
         this.anims.set(nome.toLowerCase(), {
-          image: await carregarImagem(`${base}/${alvo.querySelector("Name")?.textContent}-Anim.png`),
-          frameW: parseInt(alvo.querySelector("FrameWidth")?.textContent || "40", 10),
-          frameH: parseInt(alvo.querySelector("FrameHeight")?.textContent || "40", 10),
+          image,
+          pivotY: medirLinhaDosPes(image, fw, fh),
+          frameW: fw,
+          frameH: fh,
           durations: durations.length ? durations : [10],
         });
       } catch {
@@ -206,6 +255,10 @@ export class PmdProvider implements SpriteProvider {
       }
     }
     if (this.anims.size === 0) throw new Error("nenhuma animação carregada");
+  }
+
+  animacoesDisponiveis(): string[] {
+    return [...this.anims.keys()].sort();
   }
 
   frame(anim: AnimationName, dir: Direction8, timeMs: number): Frame | null {
@@ -235,7 +288,7 @@ export class PmdProvider implements SpriteProvider {
       sw: a.frameW,
       sh: a.frameH,
       pivotX: a.frameW / 2,
-      pivotY: a.frameH * 0.9,
+      pivotY: a.pivotY,
     };
   }
 }
