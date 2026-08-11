@@ -10,6 +10,8 @@ import {
   totalFrames,
   overlaps,
   worldBox,
+  resolverAcerto,
+  ordemDeDesenho,
 } from "../index";
 import { MOVESET_BASE, COMBO_BASICO } from "../combat/moveset";
 
@@ -145,5 +147,72 @@ describe("contrato mínimo de animação", () => {
   it("a lista de vida cobre o que um Tamagotchi precisa expressar", () => {
     for (const a of ["idle", "walk", "eat", "sleep", "happy", "sad"])
       expect(ANIM_MINIMO_VIDA).toContain(a);
+  });
+});
+
+/**
+ * ## O eixo de profundidade
+ *
+ * Existe desde já para que o beat 'em up não obrigue a revisitar toda colisão
+ * do jogo de luta depois. No versus, `z` fica em 0 e nada muda.
+ */
+describe("profundidade — a porta que fica aberta para o beat 'em up", () => {
+  const lutador = (x: number, z: number, facingRight = true) => ({
+    position: { x, y: 0, z },
+    facingRight,
+    hurtbox: { x: -16, y: -60, w: 32, h: 60 },
+  });
+
+  it("no versus, com todo mundo em z=0, o golpe conecta normalmente", () => {
+    const r = resolverAcerto(lutador(0, 0), MOVESET_BASE.soco_M, lutador(30, 0));
+    expect(r.conecta).toBe(true);
+    if (r.conecta) expect(r.dano).toBe(MOVESET_BASE.soco_M.hit.damage);
+  });
+
+  it("no beat 'em up, o golpe passa longe de quem está em outra faixa", () => {
+    const r = resolverAcerto(lutador(0, 0), MOVESET_BASE.soco_M, lutador(30, 60));
+    expect(r.conecta).toBe(false);
+    if (!r.conecta) expect(r.motivo).toBe("outra-faixa");
+  });
+
+  it("faixas próximas ainda conectam — a tolerância existe para o jogo ser jogável", () => {
+    expect(resolverAcerto(lutador(0, 0), MOVESET_BASE.soco_M, lutador(30, 10)).conecta).toBe(true);
+  });
+
+  it("fora de alcance horizontal não conecta, mesmo na mesma faixa", () => {
+    const r = resolverAcerto(lutador(0, 0), MOVESET_BASE.soco_M, lutador(400, 0));
+    expect(r.conecta).toBe(false);
+    if (!r.conecta) expect(r.motivo).toBe("longe");
+  });
+
+  it("defender reduz muito o dano, mas não zera", () => {
+    const livre = resolverAcerto(lutador(0, 0), MOVESET_BASE.soco_M, lutador(30, 0), "nao");
+    const bloqueado = resolverAcerto(lutador(0, 0), MOVESET_BASE.soco_M, lutador(30, 0), "em-pe");
+    expect(livre.conecta && bloqueado.conecta).toBe(true);
+    if (livre.conecta && bloqueado.conecta) {
+      expect(bloqueado.dano).toBeLessThan(livre.dano);
+      expect(bloqueado.dano).toBeGreaterThan(0);
+    }
+  });
+
+  it("golpe baixo não é defendido em pé", () => {
+    const r = resolverAcerto(lutador(0, 0), MOVESET_BASE.chute_baixo, lutador(28, 0), "em-pe");
+    expect(r.conecta).toBe(true);
+    if (r.conecta) expect(r.dano).toBe(MOVESET_BASE.chute_baixo.hit.damage);
+  });
+
+  it("golpe baixo É defendido agachado", () => {
+    const r = resolverAcerto(lutador(0, 0), MOVESET_BASE.chute_baixo, lutador(28, 0), "agachado");
+    expect(r.conecta).toBe(true);
+    if (r.conecta) expect(r.dano).toBeLessThan(MOVESET_BASE.chute_baixo.hit.damage);
+  });
+
+  it("quem está ao fundo é desenhado primeiro", () => {
+    const atores = [
+      { nome: "frente", position: { x: 0, y: 0, z: 80 } },
+      { nome: "fundo", position: { x: 0, y: 0, z: 5 } },
+      { nome: "meio", position: { x: 0, y: 0, z: 40 } },
+    ];
+    expect(ordemDeDesenho(atores).map((a) => a.nome)).toEqual(["fundo", "meio", "frente"]);
   });
 });

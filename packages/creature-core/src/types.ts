@@ -158,6 +158,46 @@ export interface CombatStats {
   moves: string[];
 }
 
+/**
+ * Retratos de rosto — a cara que aparece no painel conforme o humor.
+ *
+ * Separados das animações de corpo inteiro de propósito: são imagens estáticas
+ * pequenas, muito mais baratas de produzir, e são elas que dão personalidade ao
+ * companheiro. Um bicho que muda de cara quando está com fome parece vivo com
+ * uma fração do custo de uma animação nova.
+ */
+export interface Portraits {
+  radiante?: string;
+  contente?: string;
+  faminto?: string;
+  exausto?: string;
+  triste?: string;
+  dormindo?: string;
+}
+
+/**
+ * Uma forma do personagem — a peça que torna possível o "vira bicho".
+ *
+ * Referência do autor: Beast Wars. O personagem tem duas naturezas e troca
+ * entre elas; cada uma tem arte própria, golpes próprios e números próprios.
+ * A forma animal pode ser rápida e frágil, a humanoide lenta e forte — ou o
+ * contrário, é decisão de design, não de código.
+ *
+ * Está declarado agora, mesmo sem uso, porque suportar duas formas depois
+ * significaria mexer em tudo que assume "um personagem, uma arte". Declarar o
+ * plural desde o início custa um campo; descobrir que é singular custa uma
+ * reescrita.
+ */
+export interface CreatureForm {
+  id: string;
+  name: string;
+  sprite: SpriteSource;
+  portraits?: Portraits;
+  combat?: CombatStats;
+  /** Quadros de animação da transformação. */
+  transformFrames?: number;
+}
+
 export interface CreatureDefinition {
   id: CreatureId;
   name: string;
@@ -174,6 +214,13 @@ export interface CreatureDefinition {
   favFood: string;
   evolutions?: EvolutionRule[];
   combat?: CombatStats;
+  portraits?: Portraits;
+  /**
+   * Formas alternativas. Ausente = personagem de forma única, que é o caso de
+   * todos hoje. A troca de forma é uma ação em combate, não uma evolução: a
+   * evolução é permanente e vem do vínculo; a forma é temporária e tática.
+   */
+  forms?: CreatureForm[];
 }
 
 // ---------------------------------------------------------------------------

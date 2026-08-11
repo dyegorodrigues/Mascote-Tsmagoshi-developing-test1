@@ -37,6 +37,63 @@ export interface Box {
   h: number;
 }
 
+/**
+ * Posição no mundo, com o eixo de PROFUNDIDADE incluído desde o começo.
+ *
+ * ## Por que `z` existe antes de haver beat 'em up
+ *
+ * Num jogo de luta versus, o personagem vive em duas dimensões: `x` (frente e
+ * trás) e `y` (altura do pulo). Não existe profundidade — os dois lutadores
+ * estão sempre no mesmo plano.
+ *
+ * Num beat 'em up existe uma terceira: andar "para dentro" da tela, subir e
+ * descer na faixa do cenário. É o que permite desviar de um inimigo passando
+ * por trás dele.
+ *
+ * Se este eixo nascesse só quando o beat 'em up fosse construído, seria preciso
+ * revisitar **toda** posição, **toda** colisão e **toda** verificação de acerto
+ * do jogo já pronto. É o tipo exato de porta que se fecha sem perceber e cobra
+ * caro depois.
+ *
+ * Com ele aqui desde o início, o versus simplesmente mantém `z = 0` nos dois
+ * lutadores e se comporta exatamente como um jogo 2D. Custo hoje: um campo.
+ */
+export interface Vec3 {
+  x: number;
+  y: number;
+  /** Profundidade. `0` no versus; varia no beat 'em up. */
+  z: number;
+}
+
+/**
+ * Distância de profundidade em que dois personagens ainda se acertam.
+ *
+ * É assim que beat 'em ups de verdade resolvem o problema: as caixas de acerto
+ * continuam sendo retângulos 2D — baratos de desenhar e de conferir — e a
+ * profundidade entra como uma tolerância. Se a diferença de `z` for maior que
+ * isto, o golpe passa "na frente" ou "atrás" do inimigo e não conecta.
+ *
+ * Modelar caixas em 3D de verdade seria mais caro e não deixaria o jogo melhor.
+ */
+export const TOLERANCIA_PROFUNDIDADE = 14;
+
+/** Os dois estão perto o bastante em profundidade para trocar golpes? */
+export function mesmaFaixa(a: Vec3, b: Vec3, tolerancia = TOLERANCIA_PROFUNDIDADE): boolean {
+  return Math.abs(a.z - b.z) <= tolerancia;
+}
+
+/**
+ * Ordem de desenho no beat 'em up.
+ *
+ * Quem está mais ao fundo é desenhado primeiro, para quem está à frente cobrir.
+ * Sem isto, um inimigo distante aparece por cima do jogador e a cena vira
+ * confusão. No versus a função é inofensiva: com todo mundo em `z = 0` a ordem
+ * não muda.
+ */
+export function ordemDeDesenho<T extends { position: Vec3 }>(atores: T[]): T[] {
+  return [...atores].sort((a, b) => a.position.z - b.position.z);
+}
+
 export type MoveHeight = "baixo" | "medio" | "alto" | "aereo";
 
 /** Como o golpe é invocado. Notação numérica clássica: 2=baixo, 6=frente. */
@@ -151,4 +208,60 @@ export function worldBox(box: Box, pos: { x: number; y: number }, facingRight: b
 
 export function overlaps(a: Box, b: Box): boolean {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+export interface Lutador {
+  position: Vec3;
+  facingRight: boolean;
+  /** Caixa de dano do personagem — onde ele PODE ser acertado. */
+  hurtbox: Box;
+}
+
+export type ResultadoDeAcerto =
+  | { conecta: false; motivo: "longe" | "outra-faixa" | "altura-errada" }
+  | { conecta: true; dano: number; hitstun: number; empurrao: number };
+
+/**
+ * Decide se um golpe conecta.
+ *
+ * Uma função só, usada pelos dois gêneros. No versus, `z` é sempre `0` e a
+ * verificação de faixa nunca reprova nada. No beat 'em up, ela é o que faz o
+ * soco passar por cima do ombro de um inimigo que está mais ao fundo.
+ *
+ * `defendendo` recebe a postura para respeitar a regra do gênero: golpe baixo
+ * não é defendido em pé, golpe alto não é defendido agachado.
+ */
+export function resolverAcerto(
+  atacante: Lutador,
+  golpe: MoveDefinition,
+  alvo: Lutador,
+  defendendo: "em-pe" | "agachado" | "nao" = "nao",
+): ResultadoDeAcerto {
+  if (!mesmaFaixa(atacante.position, alvo.position))
+    return { conecta: false, motivo: "outra-faixa" };
+
+  const dano = worldBox(golpe.hitboxes[0], atacante.position, atacante.facingRight);
+  const corpo = worldBox(alvo.hurtbox, alvo.position, alvo.facingRight);
+  if (!overlaps(dano, corpo)) return { conecta: false, motivo: "longe" };
+
+  const defendeu =
+    defendendo !== "nao" &&
+    (golpe.hit.guard === "qualquer" ||
+      (golpe.hit.guard === "baixo" && defendendo === "agachado") ||
+      (golpe.hit.guard === "alto" && defendendo === "em-pe"));
+
+  if (defendeu)
+    return {
+      conecta: true,
+      dano: Math.round(golpe.hit.damage * 0.15),
+      hitstun: golpe.hit.blockstun,
+      empurrao: golpe.hit.pushback,
+    };
+
+  return {
+    conecta: true,
+    dano: golpe.hit.damage,
+    hitstun: golpe.hit.hitstun,
+    empurrao: golpe.hit.pushback,
+  };
 }
