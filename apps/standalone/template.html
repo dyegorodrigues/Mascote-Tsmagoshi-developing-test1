@@ -1,0 +1,523 @@
+<title>Bicho Vivo</title>
+<style>
+  :root{
+    --paper:#F2F5F8; --card:#FFF; --ink:#16202E; --soft:#5A6B80; --faint:#93A2B4;
+    --rule:#DCE3EB; --accent:#0E7C86; --accentDim:#D6EBED;
+    --fome:#F59E0B; --energia:#0EA5E9; --alegria:#22C55E; --vinculo:#EC4899;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --paper:#0D131B; --card:#161F2A; --ink:#E6ECF3; --soft:#9FAFC2; --faint:#6B7C90;
+    --rule:#28323F; --accent:#45B8C0; --accentDim:#10323A;}}
+  :root[data-theme="dark"]{
+    --paper:#0D131B; --card:#161F2A; --ink:#E6ECF3; --soft:#9FAFC2; --faint:#6B7C90;
+    --rule:#28323F; --accent:#45B8C0; --accentDim:#10323A;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    font-size:16px;line-height:1.5;overscroll-behavior:none}
+  .app{max-width:460px;margin:0 auto;padding:14px 14px 40px}
+  .card{background:var(--card);border-radius:20px;padding:16px;
+    box-shadow:0 2px 18px rgba(22,32,46,.09)}
+  header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+  h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.01em}
+  .sub{margin:2px 0 0;font-size:12px;color:var(--soft)}
+  .humor{text-align:center;flex:none}
+  .humor img{width:56px;height:56px;image-rendering:pixelated;display:block;
+    border-radius:12px;border:2px solid var(--rule);background:var(--paper)}
+  .humor .txt{font-size:9px;color:var(--soft);text-transform:uppercase;
+    letter-spacing:.08em;font-weight:800;margin-top:3px}
+  canvas{width:100%;display:block;border-radius:16px;touch-action:manipulation;cursor:pointer}
+  .dica{font-size:11px;color:var(--faint);text-align:center;margin:7px 0 12px}
+  .balao{background:var(--accentDim);color:var(--accent);padding:9px 13px;border-radius:12px;
+    font-size:13px;font-weight:700;margin-bottom:10px;text-align:center;animation:pop .3s}
+  @keyframes pop{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+  .barras{display:grid;gap:7px;margin:12px 0}
+  .brow{display:flex;align-items:center;gap:9px}
+  .bnome{font-size:11px;color:var(--soft);width:56px;flex:none;font-weight:600}
+  .btrilha{display:block;flex:1;height:9px;background:var(--rule);border-radius:99px;overflow:hidden}
+  .bfill{display:block;height:100%;border-radius:99px;transition:width .4s ease}
+  .bval{font-size:11px;width:26px;text-align:right;color:var(--soft);
+    font-variant-numeric:tabular-nums;font-weight:600}
+  nav{display:flex;gap:6px;margin:12px 0}
+  nav button{flex:1;padding:10px 0;border:1.5px solid var(--rule);background:var(--card);
+    border-radius:11px;font-size:13px;font-weight:700;color:var(--soft);cursor:pointer}
+  nav button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .acoes{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:12px}
+  .acoes button{padding:11px 2px;border:1.5px solid var(--rule);background:var(--card);
+    border-radius:12px;font-size:12px;font-weight:700;cursor:pointer;color:var(--ink)}
+  .acoes button:active{transform:translateY(1px)}
+  .acoes .ico{display:block;font-size:19px;margin-bottom:2px}
+  .bloco{background:var(--paper);border-radius:13px;padding:13px;margin-bottom:10px}
+  .bloco h3{margin:0 0 5px;font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;
+    color:var(--accent);font-weight:800}
+  .bloco p{margin:0 0 10px;font-size:12.5px;color:var(--soft)}
+  .cheio{width:100%;padding:11px;border:none;background:var(--accent);color:#fff;
+    border-radius:11px;font-size:13px;font-weight:700;cursor:pointer}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{padding:7px 11px;border:1.5px solid var(--rule);background:var(--card);
+    border-radius:99px;font-size:11.5px;font-weight:700;cursor:pointer;color:var(--ink);
+    font-family:ui-monospace,Menlo,monospace}
+  .chip.on{background:var(--accentDim);border-color:var(--accent);color:var(--accent)}
+  .chip .bola{display:inline-block;width:9px;height:9px;border-radius:99px;margin-right:5px}
+  .pensa{font-size:11.5px;color:var(--soft);text-align:center;margin:8px 0 2px;
+    font-style:italic;min-height:16px}
+  .nota{font-size:11px;color:var(--faint);margin-top:12px;text-align:center;line-height:1.6}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+
+<div class="app">
+  <div class="card">
+    <header>
+      <div>
+        <h1 id="nome">—</h1>
+        <p class="sub" id="sub">—</p>
+      </div>
+      <div class="humor">
+        <img id="retrato" alt="" />
+        <div class="txt" id="humor">—</div>
+      </div>
+    </header>
+
+    <div id="balao" class="balao" hidden></div>
+    <canvas id="tela" width="440" height="320"></canvas>
+    <p class="pensa" id="pensa"></p>
+    <p class="dica">Toque no chão para ele ir · duas vezes para correr · toque <b>nele</b> para carinho</p>
+
+    <div class="barras" id="barras"></div>
+    <nav>
+      <button data-aba="cuidar" class="on">Cuidar</button>
+      <button data-aba="movimentos">Movimentos</button>
+      <button data-aba="trocar">Trocar</button>
+    </nav>
+    <div id="painel"></div>
+
+    <p class="nota">Protótipo de desenvolvimento · personagens de terceiros, uso interno.</p>
+  </div>
+</div>
+
+<script>
+const DADOS = /*__SPRITES__*/;
+
+const TICK = 1000, MAX_AUSENCIA = 12*3600e3, PISO = 15;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const agora=()=>Date.now();
+const sorteio=a=>a[Math.floor(Math.random()*a.length)];
+const CENA = {minX:18,maxX:82,minY:50,maxY:82};
+
+// ---------------------------------------------------------------------------
+// Estado e necessidades
+// ---------------------------------------------------------------------------
+function novoEstado(pid){
+  return { pid, nome:DADOS[pid].nome, nivel:1, xp:0, xpProx:100,
+    fome:80, energia:80, alegria:80, vinculo:10, dormindo:false,
+    x:50, y:66, alvo:null, vel:0.9, esq:false,
+    anim:"idle", travaAte:0, plano:null, passo:0, proxDecisao:0,
+    ultimoTick:agora() };
+}
+
+function decair(s,n){
+  if (s.dormindo){
+    s.fome=clamp(s.fome-0.2*n,PISO,100); s.energia=clamp(s.energia+3.5*n,PISO,100);
+  } else {
+    s.fome=clamp(s.fome-0.4*n,PISO,100); s.energia=clamp(s.energia-0.3*n,PISO,100);
+    s.alegria=clamp(s.alegria-0.2*n,PISO,100);
+  }
+}
+
+function aoAbrir(s){
+  const dec=Math.max(0,agora()-s.ultimoTick), usado=Math.min(dec,MAX_AUSENCIA);
+  decair(s,Math.floor(usado/TICK)); s.ultimoTick=agora();
+  const h=dec/3600e3;
+  if (h<0.5) return null;
+  if (s.fome<=30) return `${s.nome} está com fome e ficou feliz de te ver!`;
+  if (h>=24) return `${s.nome} sentiu sua falta! Que bom que você voltou.`;
+  return `${s.nome} estava esperando por você!`;
+}
+
+const EMOCOES={
+  radiante:{r:"Joyous", t:"Radiante"},  contente:{r:"Normal", t:"Contente"},
+  faminto: {r:"Worried",t:"Com fome"},  exausto: {r:"Dizzy",  t:"Exausto"},
+  triste:  {r:"Sad",    t:"Triste"},    dormindo:{r:"Sigh",   t:"Dormindo"},
+};
+function emocao(s){
+  if (s.dormindo) return "dormindo";
+  if (s.fome<25) return "faminto";
+  if (s.energia<20) return "exausto";
+  if (s.alegria<30) return "triste";
+  if (s.fome>70&&s.energia>70&&s.alegria>70) return "radiante";
+  return "contente";
+}
+
+// ---------------------------------------------------------------------------
+// Comportamento de NPC
+//
+// Um bicho vivo tem INTENÇÃO: escolhe um plano e o persegue por alguns
+// segundos, em vez de sortear uma pose isolada a cada instante. É a diferença
+// entre "anda até a sombra, senta, olha em volta, boceja" e um sorteio que
+// parece defeito.
+//
+// Cada passo do plano diz o que fazer e por quanto tempo. `andar` termina
+// quando chega; os outros terminam no relógio. O pensamento aparece em texto
+// para o comportamento ser LEGÍVEL — dá para ver que ele está fazendo algo com
+// propósito, e não se debatendo.
+// ---------------------------------------------------------------------------
+const tem=(s,a)=>!!DADOS[s.pid].anims[a];
+const A=(s,...op)=>op.find(a=>tem(s,a))||"idle";
+
+function planos(s){
+  const e=emocao(s);
+  const P=[];
+  if (e==="dormindo"){
+    P.push({ pensa:"dormindo…", passos:[[A(s,"sleep","laying"),6000]] });
+    return P;
+  }
+  if (e==="exausto"){
+    P.push({ pensa:"que canseira…", passos:[[A(s,"sit"),2500],[A(s,"sigh","deepbreath","nod"),1400],[A(s,"laying","sit"),3000]] });
+    P.push({ pensa:"vou me deitar", passos:[["andar",0],[A(s,"laying","sit"),4000]] });
+    return P;
+  }
+  if (e==="faminto"){
+    P.push({ pensa:"cadê a comida?", passos:[[A(s,"lookup"),1200],["andar",0],[A(s,"nod","cringe"),900]] });
+    P.push({ pensa:"tô com fome…", passos:[[A(s,"cringe","sad","sit"),1800],[A(s,"lookup"),1200]] });
+    P.push({ pensa:"procurando algo pra comer", passos:[["andar",0],[A(s,"head","lookup"),900],["andar",0]] });
+    return P;
+  }
+  if (e==="triste"){
+    P.push({ pensa:"…", passos:[[A(s,"sit"),2400],[A(s,"lookup"),1400]] });
+    P.push({ pensa:"quer companhia", passos:[["andar",0],[A(s,"nod"),1000],[A(s,"sit"),2000]] });
+    return P;
+  }
+  if (e==="radiante"){
+    P.push({ pensa:"que dia bom!", passos:[[A(s,"hop"),800],[A(s,"hop"),800],[A(s,"pose"),1200]] });
+    P.push({ pensa:"vamos brincar!", passos:[["correr",0],[A(s,"hop"),800],["andar",0]] });
+    P.push({ pensa:"olha só isso", passos:[[A(s,"charge","deepbreath"),1100],[A(s,"pose"),1300]] });
+    P.push({ pensa:"treinando", passos:[[A(s,"attack","quickstrike"),700],[A(s,"attack","quickstrike"),700],[A(s,"pose"),1100]] });
+    return P;
+  }
+  P.push({ pensa:"dando uma volta", passos:[["andar",0],[A(s,"lookup"),1100]] });
+  P.push({ pensa:"olhando em volta", passos:[[A(s,"head","lookup"),1000],[A(s,"nod"),800],["andar",0]] });
+  P.push({ pensa:"descansando", passos:[[A(s,"sit"),2600]] });
+  P.push({ pensa:"respirando fundo", passos:[[A(s,"deepbreath","nod"),1600]] });
+  P.push({ pensa:"explorando", passos:[["andar",0],["andar",0]] });
+  P.push({ pensa:"alongando", passos:[[A(s,"pose","deepbreath"),1400],[A(s,"nod"),700]] });
+  return P;
+}
+
+function comecarPlano(s){
+  s.plano=sorteio(planos(s)); s.passo=0; aplicarPasso(s);
+}
+
+function aplicarPasso(s){
+  if (!s.plano || s.passo>=s.plano.passos.length){ s.plano=null; s.anim="idle";
+    s.proxDecisao=agora()+800+Math.random()*1800; return; }
+  const [o,dur]=s.plano.passos[s.passo];
+  if (o==="andar"||o==="correr"){
+    s.alvo={x:clamp(s.x+(Math.random()-.5)*44,CENA.minX,CENA.maxX),
+            y:clamp(s.y+(Math.random()-.5)*22,CENA.minY,CENA.maxY)};
+    s.vel = o==="correr" ? 2.1 : 0.95;
+    s.esq = s.alvo.x < s.x;
+    s.anim=A(s,"walk"); s.travaAte=0;
+  } else { s.anim=o; s.travaAte=agora()+dur; s.alvo=null; }
+}
+
+function proximoPasso(s){ s.passo++; aplicarPasso(s); }
+
+/** Necessidades e decisões. Uma vez por segundo — nunca movimento. */
+function tickLento(s){
+  const t=agora(); decair(s,1); s.ultimoTick=t;
+  if (s.dormindo && s.energia>=100){
+    s.dormindo=false; s.plano=null; s.anim=A(s,"wake"); s.travaAte=t+1500;
+    efeito("texto",s,"acordou!"); return;
+  }
+  if (!s.dormindo && s.energia<=16){
+    s.dormindo=true; s.plano=null; s.alvo=null; s.anim=A(s,"sleep","laying");
+    s.travaAte=0; return;
+  }
+}
+
+/** Movimento e encadeamento do plano. 60 vezes por segundo. */
+function tickRapido(s,dt){
+  const t=agora();
+  if (s.travaAte && t<s.travaAte) return;
+  if (s.travaAte && t>=s.travaAte){ s.travaAte=0; if (s.plano){ proximoPasso(s); return; } s.anim="idle"; }
+
+  if (s.alvo){
+    const dx=s.alvo.x-s.x, dy=s.alvo.y-s.y, d=Math.hypot(dx,dy);
+    const passo=s.vel*dt*17;
+    if (d<=passo){
+      s.x=s.alvo.x; s.y=s.alvo.y; s.alvo=null;
+      if (s.plano) proximoPasso(s); else { s.anim="idle"; s.proxDecisao=t+600+Math.random()*1400; }
+    } else {
+      s.x+=dx/d*passo; s.y+=dy/d*passo; s.esq=dx<0;
+      s.anim=A(s,"walk");
+    }
+    return;
+  }
+  if (s.dormindo){ s.anim=A(s,"sleep","laying"); return; }
+  if (!s.plano && t>=s.proxDecisao) comecarPlano(s);
+}
+
+// ---------------------------------------------------------------------------
+// Efeitos visuais
+//
+// Sem eles a cena fica morta: a ação acontece e nada confirma que aconteceu.
+// São baratos — partículas desenhadas por código — e é o que dá peso ao toque.
+// ---------------------------------------------------------------------------
+const fx=[];
+function efeito(tipo,s,txt){
+  const base={tipo,x:s.x,y:s.y,nasceu:agora(),txt};
+  if (tipo==="coracao") for(let i=0;i<4;i++) fx.push({...base,dx:(Math.random()-.5)*3,atraso:i*130});
+  else if (tipo==="poeira") for(let i=0;i<6;i++) fx.push({...base,dx:(Math.random()-.5)*5,dy:-Math.random()*1.5});
+  else if (tipo==="impacto") fx.push({...base});
+  else if (tipo==="estrela") for(let i=0;i<7;i++) fx.push({...base,ang:i/7*6.28});
+  else fx.push(base);
+}
+
+function desenharFx(ctx,W,H,t){
+  for (let i=fx.length-1;i>=0;i--){
+    const f=fx[i], idade=t-f.nasceu-(f.atraso||0);
+    if (idade<0) continue;
+    const vida = f.tipo==="impacto"?260 : f.tipo==="estrela"?600 : 1100;
+    if (idade>vida){ fx.splice(i,1); continue; }
+    const p=idade/vida, px=f.x/100*W, py=f.y/100*H;
+    ctx.save(); ctx.globalAlpha=1-p;
+    if (f.tipo==="coracao"){
+      ctx.font="16px system-ui"; ctx.textAlign="center";
+      ctx.fillText("💗", px+f.dx*p*10, py-40-p*46);
+    } else if (f.tipo==="poeira"){
+      ctx.fillStyle="#B9A88A";
+      ctx.beginPath(); ctx.arc(px+f.dx*p*16, py-p*10+(f.dy||0)*p*8, 4*(1-p), 0, 7); ctx.fill();
+    } else if (f.tipo==="impacto"){
+      ctx.strokeStyle="#FFF"; ctx.lineWidth=3*(1-p);
+      ctx.beginPath(); ctx.arc(px, py-34, 10+p*34, 0, 7); ctx.stroke();
+    } else if (f.tipo==="estrela"){
+      ctx.fillStyle="#FCD34D";
+      ctx.beginPath(); ctx.arc(px+Math.cos(f.ang)*p*40, py-38+Math.sin(f.ang)*p*40, 3.5*(1-p), 0, 7); ctx.fill();
+    } else if (f.tipo==="texto"){
+      ctx.font="700 13px system-ui"; ctx.textAlign="center"; ctx.fillStyle="#0E7C86";
+      ctx.fillText(f.txt, px, py-52-p*24);
+    }
+    ctx.restore();
+  }
+}
+
+/** Os "z" do sono, desenhados enquanto ele dorme. */
+function desenharSono(ctx,px,py,t){
+  ctx.save(); ctx.fillStyle="#7C9CBF"; ctx.textAlign="center";
+  for (let i=0;i<3;i++){
+    const f=((t/1100)+i*0.33)%1;
+    ctx.globalAlpha=(1-f)*0.9;
+    ctx.font=`${11+i*3}px system-ui`;
+    ctx.fillText("z", px+18+f*16, py-46-f*34);
+  }
+  ctx.restore();
+}
+
+// ---------------------------------------------------------------------------
+// Interações
+// ---------------------------------------------------------------------------
+function reagir(s,anim,ms){ s.anim=A(s,anim); s.travaAte=agora()+ms; s.alvo=null; s.plano=null; }
+
+const ACOES={
+  alimentar(s){ s.fome=clamp(s.fome+30,0,100); s.alegria=clamp(s.alegria+8,0,100);
+    s.vinculo=clamp(s.vinculo+2,0,100); s.dormindo=false;
+    reagir(s,"eat",2400); efeito("estrela",s); return "Que delícia!"; },
+  brincar(s){ s.alegria=clamp(s.alegria+20,0,100); s.energia=clamp(s.energia-8,0,100);
+    s.vinculo=clamp(s.vinculo+3,0,100); s.dormindo=false;
+    reagir(s,"hop",1800); efeito("poeira",s); return "Que divertido!"; },
+  carinho(s){ s.alegria=clamp(s.alegria+10,0,100); s.vinculo=clamp(s.vinculo+4,0,100);
+    reagir(s,"nod",1400); efeito("coracao",s); return "Ronrom…"; },
+  dormir(s){ s.dormindo=!s.dormindo; s.alvo=null; s.plano=null;
+    s.anim=s.dormindo?A(s,"sleep","laying"):A(s,"wake");
+    s.travaAte=s.dormindo?0:agora()+1500;
+    return s.dormindo?"Boa noite…":"Bom dia!"; },
+};
+
+function recompensar(s){
+  s.xp+=35; s.vinculo=clamp(s.vinculo+3,0,100); s.alegria=clamp(s.alegria+8,0,100);
+  let subiu=false;
+  while (s.xp>=s.xpProx){ s.xp-=s.xpProx; s.nivel++; s.xpProx=Math.round(s.xpProx*1.3); subiu=true; }
+  reagir(s,"pose",2000); efeito("estrela",s);
+  if (subiu) efeito("texto",s,`Nível ${s.nivel}!`);
+  return subiu?`Subiu para o nível ${s.nivel}!`:"Acertou! +35 XP";
+}
+
+// ---------------------------------------------------------------------------
+// Desenho
+// ---------------------------------------------------------------------------
+const imgs={};
+function imagem(pid,anim){
+  const k=pid+"/"+anim;
+  if (imgs[k]) return imgs[k];
+  const a=DADOS[pid].anims[anim]; if (!a) return null;
+  const im=new Image(); im.src=a.src; imgs[k]=im; return im;
+}
+
+/**
+ * Linha dos pés medida em TODOS os quadros da animação.
+ *
+ * Medir só o primeiro quadro fazia o bicho flutuar nas animações que começam no
+ * ar — o defeito que o autor viu. Pegar o ponto mais baixo do conjunto ancora a
+ * animação inteira no chão, e quem sobe no meio dela sobe de verdade.
+ */
+const pes={};
+function linhaDosPes(pid,anim){
+  const k=pid+"/"+anim;
+  if (pes[k]!==undefined) return pes[k];
+  const a=DADOS[pid].anims[anim], im=imagem(pid,anim);
+  if (!a||!im||!im.complete||!im.naturalWidth) return null;
+  try{
+    const cols=Math.max(1,Math.round(im.naturalWidth/a.w));
+    const c=document.createElement("canvas"); c.width=a.w*cols; c.height=a.h;
+    const x=c.getContext("2d",{willReadFrequently:true});
+    x.drawImage(im,0,0,a.w*cols,a.h,0,0,a.w*cols,a.h);
+    const d=x.getImageData(0,0,a.w*cols,a.h).data, W=a.w*cols;
+    for (let y=a.h-1;y>=0;y--) for (let px=0;px<W;px++)
+      if (d[(y*W+px)*4+3]>16){ pes[k]=y+1; return pes[k]; }
+  }catch(e){}
+  pes[k]=a.h*0.82; return pes[k];
+}
+
+const LINHAS=["down","down-right","right","up-right","up","up-left","left","down-left"];
+const tela=document.getElementById("tela");
+const ctx=tela.getContext("2d");
+ctx.imageSmoothingEnabled=false;
+
+let ultimoQuadro=0;
+function desenhar(t){
+  const s=estado, W=tela.width, H=tela.height;
+  const dt=Math.min(0.05,(t-ultimoQuadro)/1000); ultimoQuadro=t;
+  tickRapido(s,dt);
+
+  ctx.clearRect(0,0,W,H);
+  const ceu=ctx.createLinearGradient(0,0,0,H*0.55);
+  ceu.addColorStop(0,"#CDE7FB"); ceu.addColorStop(1,"#E9F6E4");
+  ctx.fillStyle=ceu; ctx.fillRect(0,0,W,H*0.55);
+  const chao=ctx.createLinearGradient(0,H*0.5,0,H);
+  chao.addColorStop(0,"#D3E8B0"); chao.addColorStop(1,"#9CC85F");
+  ctx.fillStyle=chao; ctx.fillRect(0,H*0.5,W,H*0.5);
+  ctx.globalAlpha=.12; ctx.fillStyle="#4C7A2B";
+  for (let i=0;i<7;i++) { const bx=(i*137%W), by=H*0.56+(i*53%Number((H*0.4).toFixed(0)));
+    ctx.beginPath(); ctx.ellipse(bx,by,16,5,0,0,7); ctx.fill(); }
+  ctx.globalAlpha=1;
+
+  const px=s.x/100*W, py=s.y/100*H;
+  const nomeAnim = DADOS[s.pid].anims[s.anim] ? s.anim : "idle";
+  const a=DADOS[s.pid].anims[nomeAnim], im=imagem(s.pid,nomeAnim);
+  const esc=Math.max(3.4,W/110);
+
+  ctx.globalAlpha=.22; ctx.fillStyle="#33691E";
+  ctx.beginPath(); ctx.ellipse(px,py,a.w*esc*0.22,a.h*esc*0.055,0,0,7); ctx.fill();
+  ctx.globalAlpha=1;
+
+  if (im&&im.complete&&im.naturalWidth){
+    const total=a.d.reduce((x,y)=>x+y,0);
+    let tt=(t/16.66)%total, acc=0, col=0;
+    for (let i=0;i<a.d.length;i++){ acc+=a.d[i]; if (tt<acc){ col=i; break; } }
+    const dir = s.alvo ? (s.esq?"left":"right") : "down";
+    const linha=Math.max(0,LINHAS.indexOf(dir));
+    const fy=linhaDosPes(s.pid,nomeAnim) ?? a.h*0.82;
+    ctx.drawImage(im, col*a.w, linha*a.h, a.w, a.h,
+      px-a.w*esc/2, py-fy*esc, a.w*esc, a.h*esc);
+  }
+
+  if (s.dormindo) desenharSono(ctx,px,py,t);
+  desenharFx(ctx,W,H,t);
+  requestAnimationFrame(desenhar);
+}
+
+// ---------------------------------------------------------------------------
+// Tela
+// ---------------------------------------------------------------------------
+const CHAVE="bicho-vivo-v2";
+let estado=(()=>{ try{ const s=JSON.parse(localStorage.getItem(CHAVE));
+  if (s&&DADOS[s.pid]) return Object.assign(novoEstado(s.pid),s); }catch(e){}
+  return novoEstado("0025"); })();
+let aba="cuidar";
+
+const oi=aoAbrir(estado); if (oi) balao(oi,5000);
+
+function balao(txt,ms=2200){
+  const b=document.getElementById("balao");
+  b.textContent=txt; b.hidden=false;
+  clearTimeout(b._t); b._t=setTimeout(()=>{b.hidden=true;},ms);
+}
+
+function pintar(){
+  const s=estado, p=DADOS[s.pid], e=EMOCOES[emocao(s)];
+  document.getElementById("nome").textContent=s.nome;
+  document.getElementById("sub").textContent=`nível ${s.nivel} · ${p.elem} · ${s.xp}/${s.xpProx} XP`;
+  const r=document.getElementById("retrato");
+  r.src=p.retratos[e.r]||p.retratos.Normal||"";
+  document.getElementById("humor").textContent=e.t;
+
+  document.getElementById("barras").innerHTML=[
+    ["Fome",s.fome,"var(--fome)"],["Energia",s.energia,"var(--energia)"],
+    ["Alegria",s.alegria,"var(--alegria)"],["Vínculo",s.vinculo,"var(--vinculo)"],
+  ].map(([n,v,c])=>`<div class="brow"><span class="bnome">${n}</span>
+    <span class="btrilha"><span class="bfill" style="width:${v}%;background:${c}"></span></span>
+    <span class="bval">${Math.round(v)}</span></div>`).join("");
+
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.aba===aba));
+  document.getElementById("painel").innerHTML=painel();
+  localStorage.setItem(CHAVE,JSON.stringify(s));
+}
+
+function painel(){
+  const s=estado;
+  if (aba==="cuidar") return `
+    <div class="acoes">
+      <button data-acao="alimentar"><span class="ico">🍎</span>Comer</button>
+      <button data-acao="brincar"><span class="ico">🎾</span>Brincar</button>
+      <button data-acao="carinho"><span class="ico">🤚</span>Carinho</button>
+      <button data-acao="dormir"><span class="ico">${s.dormindo?"☀️":"🌙"}</span>${s.dormindo?"Acordar":"Dormir"}</button>
+    </div>
+    <div class="bloco"><h3>Ponte com o SAGA</h3>
+      <p>É assim que um acerto no aplicativo pedagógico chega até o bicho. O motor
+         não sabe o que é competência — recebe só o aviso de que a criança acertou.</p>
+      <button class="cheio" data-acao="premio">Simular acerto na Jornada</button></div>`;
+  if (aba==="movimentos"){
+    const l=Object.keys(DADOS[s.pid].anims).sort();
+    return `<div class="bloco"><h3>${l.length} movimentos prontos</h3>
+      <p>Todos já existem neste personagem. Toque para ver — toque de novo para soltar.</p></div>
+      <div class="chips">${l.map(x=>`<button class="chip${s.anim===x&&s.travaAte>agora()+30000?" on":""}" data-anim="${x}">${x}</button>`).join("")}</div>`;
+  }
+  return `<div class="chips">${Object.entries(DADOS).map(([pid,p])=>
+    `<button class="chip${pid===s.pid?" on":""}" data-pid="${pid}">
+      <span class="bola" style="background:${p.cor}"></span>${p.nome}</button>`).join("")}</div>`;
+}
+
+document.addEventListener("click",ev=>{
+  const b=ev.target.closest("button"); if(!b) return;
+  if (b.dataset.aba){ aba=b.dataset.aba; pintar(); return; }
+  if (b.dataset.acao==="premio"){ balao(recompensar(estado)); pintar(); return; }
+  if (b.dataset.acao){ balao(ACOES[b.dataset.acao](estado)); pintar(); return; }
+  if (b.dataset.anim){
+    const s=estado;
+    if (s.anim===b.dataset.anim && s.travaAte>agora()+30000){ s.travaAte=0; s.anim="idle"; }
+    else { s.anim=b.dataset.anim; s.travaAte=agora()+120000; s.alvo=null; s.plano=null; }
+    pintar(); return;
+  }
+  if (b.dataset.pid){ const v=estado.vinculo; estado=novoEstado(b.dataset.pid);
+    estado.vinculo=v; pintar(); return; }
+});
+
+let ultimoToque=0;
+tela.addEventListener("click",ev=>{
+  if (aba==="movimentos") return;
+  const r=tela.getBoundingClientRect();
+  const x=(ev.clientX-r.left)/r.width*100, y=(ev.clientY-r.top)/r.height*100;
+  const s=estado;
+  if (Math.hypot(x-s.x,y-s.y)<14){ balao(ACOES.carinho(s)); pintar(); return; }
+  const t=agora(), duplo=t-ultimoToque<330; ultimoToque=t;
+  s.dormindo=false; s.plano=null; s.travaAte=0;
+  s.alvo={x:clamp(x,CENA.minX,CENA.maxX), y:clamp(y,CENA.minY,CENA.maxY)};
+  s.vel=duplo?2.1:0.95; s.esq=s.alvo.x<s.x; s.anim=A(s,"walk");
+  if (duplo) efeito("poeira",s);
+});
+
+setInterval(()=>{ tickLento(estado); pintar();
+  document.getElementById("pensa").textContent = estado.plano?.pensa || ""; }, TICK);
+pintar();
+requestAnimationFrame(desenhar);
+</script>

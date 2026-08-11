@@ -12,7 +12,8 @@
     "test": "vitest run",
     "lint": "tsc --noEmit",
     "portao": "vitest run packages/creature-core/src/__tests__/portaoDePublicacao.test.ts",
-    "ficha": "tsx scripts/ficha.mjs"
+    "ficha": "tsx scripts/ficha.mjs",
+    "empacotar": "node scripts/empacotar.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
