@@ -5,3 +5,4 @@ export * from "./command/commandDriver";
 export * from "./combat/frameData";
 export * from "./catalog";
 export * from "./combat/moveset";
+export * from "./combat/vidaArriscada";

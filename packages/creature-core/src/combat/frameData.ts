@@ -147,6 +147,31 @@ export interface MoveDefinition {
   meterCost?: number;
   /** Quadros de invencibilidade desde o início. Usado em reversais. */
   invulnerable?: number;
+  /**
+   * Custo em vida — a mecânica que salva o beat 'em up do tédio.
+   *
+   * Streets of Rage 4 resolveu assim: o especial não custa barra, custa VIDA.
+   * A vida gasta fica marcada na barra e **volta se você continuar atacando
+   * sem apanhar**. Se levar um golpe antes, perde de vez.
+   *
+   * O efeito é que o jogador para de guardar o especial "para depois" — que é
+   * o que torna beat 'em up chato — e passa a arriscar. Toda partida vira uma
+   * aposta: gastei vida, agora preciso conectar o combo para recuperar.
+   *
+   * É a diferença entre socar sacos de pancada e jogar de verdade.
+   */
+  healthCost?: number;
+  /**
+   * Agarrão. Não tem caixa de acerto normal: pega quem está colado e ignora
+   * defesa. É o que impede o inimigo de ficar parado bloqueando para sempre —
+   * a resposta clássica ao jogador turtle.
+   */
+  grab?: boolean;
+  /**
+   * Quadros em que o golpe atravessa outros golpes sem tomar dano.
+   * Usado em rolamento e investida: dá mobilidade e tira o tédio de andar.
+   */
+  dodgeFrames?: number;
   animation: string;
 }
 
