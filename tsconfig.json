@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "types": ["vitest/globals"],
+    "baseUrl": ".",
+    "paths": {
+      "@creature/core": ["packages/creature-core/src/index.ts"],
+      "@creature/sprites": ["packages/creature-sprites/src/index.ts"],
+      "@creature/react": ["packages/creature-react/src/index.tsx"]
+    }
+  },
+  "include": ["packages/*/src/**/*", "apps/*/src/**/*", "vitest.config.ts"]
+}
